@@ -944,7 +944,7 @@ const DockBackgrounds = {
 
 function DockIconContent({ id, size }) {
   const [imgError, setImgError] = useState(false);
-  const imgPath = `assets/dock/${id}.png`;
+  const imgPath = `https://pub-715e1f7bc3864cb8b05d16f94698b504.r2.dev/dock/${id}.png`;
   const bg = DockBackgrounds[id] || 'linear-gradient(145deg,#333,#555)';
   const fallback = DockIconFallback[id];
 
