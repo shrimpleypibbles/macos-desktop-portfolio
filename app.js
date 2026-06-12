@@ -1,3 +1,4 @@
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 const {
   useState,
   useEffect,
@@ -237,8 +238,8 @@ function generateInitialPositions(works) {
     let x,
       y,
       tries = 0;
-    // ~20% of icons go toward the edges; rest clustered near center
-    const edgeMode = rand() < 0.2;
+    // ~10% of icons go toward the edges; rest clustered near center
+    const edgeMode = rand() < 0.1;
     while (true) {
       if (edgeMode && tries < 8) {
         const side = Math.floor(rand() * 4);
@@ -261,8 +262,8 @@ function generateInitialPositions(works) {
           r2 = rand();
         const g1 = Math.sqrt(-2 * Math.log(r1 || 0.0001)) * Math.cos(2 * Math.PI * r2);
         const g2 = Math.sqrt(-2 * Math.log(r1 || 0.0001)) * Math.sin(2 * Math.PI * r2);
-        x = cx + g1 * (W * 0.18);
-        y = cy + g2 * ((H - TOP - BOT) * 0.22);
+        x = cx + g1 * (W * 0.13);
+        y = cy + g2 * ((H - TOP - BOT) * 0.16);
       }
 
       // Clamp to visible area
@@ -437,6 +438,20 @@ function DesktopIcon({
 // METADATA BLOCK — shared by all players
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Renders trusted HTML (e.g. <a> links) from CSV fields like instrumentation/description.
+function HtmlText({
+  html,
+  className = '',
+  ...props
+}) {
+  return /*#__PURE__*/React.createElement("div", _extends({
+    className: `html-text ${className}`.trim()
+  }, props, {
+    dangerouslySetInnerHTML: {
+      __html: html
+    }
+  }));
+}
 function MetadataBlock({
   work,
   compact = false
@@ -453,20 +468,23 @@ function MetadataBlock({
       marginBottom: 3,
       lineHeight: 1.2
     }
-  }, work.name), work.sub && /*#__PURE__*/React.createElement("div", {
+  }, work.name), work.sub && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.sub,
     style: {
       fontSize: 12,
       color: '#888',
       marginBottom: work.credits || work.notes ? 4 : 8
     }
-  }, work.sub), work.credits && /*#__PURE__*/React.createElement("div", {
+  }), work.credits && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.credits,
     style: {
       fontSize: 11.5,
       color: '#555',
       marginBottom: work.notes ? 4 : 8,
       lineHeight: 1.5
     }
-  }, work.credits), work.notes && /*#__PURE__*/React.createElement("div", {
+  }), work.notes && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.notes,
     style: {
       fontSize: 11,
       color: '#777',
@@ -474,45 +492,7 @@ function MetadataBlock({
       marginBottom: 8,
       lineHeight: 1.5
     }
-  }, work.notes));
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// WAVEFORM (decorative, animated during audio playback)
-// ═══════════════════════════════════════════════════════════════════════════
-
-function Waveform({
-  work,
-  playing
-}) {
-  const bars = useMemo(() => {
-    const r = seededRand(work.id * 7);
-    return Array.from({
-      length: 36
-    }, () => 8 + r() * 38);
-  }, [work.id]);
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2.5,
-      height: 52,
-      padding: '0 4px',
-      width: '100%'
-    }
-  }, bars.map((h, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      flex: 1,
-      height: h,
-      borderRadius: 3,
-      background: playing ? `linear-gradient(to top, #0a84ff, #5ac8fa)` : 'rgba(0,0,0,0.15)',
-      transformOrigin: 'center',
-      animation: playing ? `wave ${0.4 + i % 7 * 0.12}s ease-in-out infinite alternate` : 'none',
-      animationDelay: `${i * 0.04}s`,
-      transition: 'background 0.3s'
-    }
-  })));
+  }));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -524,10 +504,10 @@ const btnIconStyle = {
   border: 'none',
   cursor: 'pointer',
   padding: 6,
-  color: '#aaa',
-  fontSize: 18,
+  color: 'rgba(255,255,255,0.7)',
+  fontSize: 17,
   lineHeight: 1,
-  transition: 'color 0.15s'
+  transition: 'color 0.15s, transform 0.1s'
 };
 function AudioPlayer({
   work
@@ -538,6 +518,7 @@ function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [err, setErr] = useState(null);
+  const [hover, setHover] = useState(false);
   const toggle = () => {
     const a = audioRef.current;
     if (!a) return;
@@ -548,11 +529,44 @@ function AudioPlayer({
     if (!a || !isFinite(a.duration)) return;
     a.currentTime = pct / 100 * a.duration;
   };
+  const art = work.thumbnail;
   return /*#__PURE__*/React.createElement("div", {
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
     style: {
-      padding: '20px 22px 22px',
-      width: 380,
-      background: '#fafafa'
+      position: 'relative',
+      width: '100%',
+      minWidth: 380,
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+      isolation: 'isolate',
+      background: '#1c1c1e',
+      color: '#fff'
+    }
+  }, art && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      inset: -60,
+      zIndex: 0,
+      backgroundImage: `url(${art})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      filter: 'blur(48px) saturate(1.6) brightness(0.55)',
+      transform: 'scale(1.2)'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      inset: 0,
+      zIndex: 0,
+      background: 'linear-gradient(180deg, rgba(20,20,22,0.55) 0%, rgba(20,20,22,0.78) 100%)',
+      backdropFilter: 'blur(2px)'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'relative',
+      zIndex: 1,
+      padding: '22px 24px 24px'
     }
   }, /*#__PURE__*/React.createElement("audio", {
     ref: audioRef,
@@ -576,47 +590,85 @@ function AudioPlayer({
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
-      gap: 16,
-      alignItems: 'flex-start',
+      gap: 18,
+      alignItems: 'center',
       marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flexShrink: 0,
+      borderRadius: 8,
+      overflow: 'hidden',
+      boxShadow: '0 8px 28px rgba(0,0,0,0.55)'
     }
   }, /*#__PURE__*/React.createElement(Thumbnail, {
     work: work,
-    size: 96
-  }), /*#__PURE__*/React.createElement("div", {
+    size: 88
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       minWidth: 0
     }
-  }, /*#__PURE__*/React.createElement(MetadataBlock, {
-    work: work
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: 'inline-block',
-      background: '#0a84ff',
-      color: '#fff',
-      fontSize: 10,
-      padding: '2px 8px',
-      borderRadius: 20,
-      fontWeight: 600,
-      letterSpacing: '0.06em'
-    }
-  }, "AUDIO"))), /*#__PURE__*/React.createElement(Waveform, {
-    work: work,
-    playing: playing
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 10,
-      padding: '0 4px'
-    }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 4,
-      background: '#e0e0e0',
-      borderRadius: 2,
+      fontSize: 17,
+      fontWeight: 600,
+      lineHeight: 1.25,
+      marginBottom: 4,
+      color: '#fff',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      textShadow: '0 1px 3px rgba(0,0,0,0.4)'
+    }
+  }, work.name), work.sub && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.sub,
+    style: {
+      fontSize: 12,
+      color: 'rgba(255,255,255,0.72)',
+      marginBottom: work.credits ? 3 : 0
+    }
+  }), work.credits && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.credits,
+    style: {
+      fontSize: 11,
+      color: 'rgba(255,255,255,0.5)',
+      lineHeight: 1.5
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 30,
+      marginBottom: 16,
+      height: 40,
+      opacity: hover || !playing ? 1 : 0,
+      transition: 'opacity 0.25s',
+      pointerEvents: hover || !playing ? 'auto' : 'none'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => seekTo(0),
+    style: btnIconStyle
+  }, "\u23EE"), /*#__PURE__*/React.createElement("button", {
+    onClick: toggle,
+    style: {
+      ...btnIconStyle,
+      fontSize: 30,
+      color: '#fff',
+      padding: 0
+    }
+  }, playing ? '⏸' : '▶'), /*#__PURE__*/React.createElement("button", {
+    onClick: () => seekTo(100),
+    style: btnIconStyle
+  }, "\u23ED")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 5,
+      background: 'rgba(255,255,255,0.18)',
+      borderRadius: 3,
       cursor: 'pointer',
       position: 'relative',
-      marginBottom: 5
+      marginBottom: 6
     },
     onClick: e => {
       const r = e.currentTarget.getBoundingClientRect();
@@ -629,8 +681,8 @@ function AudioPlayer({
       top: 0,
       height: '100%',
       width: `${progress}%`,
-      borderRadius: 2,
-      background: 'linear-gradient(to right, #0a84ff, #5ac8fa)'
+      borderRadius: 3,
+      background: 'rgba(255,255,255,0.95)'
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -638,58 +690,28 @@ function AudioPlayer({
       top: '50%',
       left: `${progress}%`,
       transform: 'translate(-50%,-50%)',
-      width: 12,
-      height: 12,
+      width: 13,
+      height: 13,
       borderRadius: '50%',
-      background: '#0a84ff',
-      boxShadow: '0 1px 4px rgba(10,132,255,0.5)'
+      background: '#fff',
+      boxShadow: '0 1px 5px rgba(0,0,0,0.5)'
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
       fontSize: 10.5,
-      color: '#aaa'
+      color: 'rgba(255,255,255,0.55)',
+      fontVariantNumeric: 'tabular-nums'
     }
-  }, /*#__PURE__*/React.createElement("span", null, fmtTime(currentTime)), /*#__PURE__*/React.createElement("span", null, fmtTime(duration)))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, fmtTime(currentTime)), /*#__PURE__*/React.createElement("span", null, duration > 0 ? '-' + fmtTime(duration - currentTime) : fmtTime(0)))), err && /*#__PURE__*/React.createElement("div", {
     style: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 22,
-      marginTop: 14
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => seekTo(0),
-    style: btnIconStyle
-  }, "\u23EE"), /*#__PURE__*/React.createElement("button", {
-    onClick: toggle,
-    style: {
-      width: 48,
-      height: 48,
-      borderRadius: '50%',
-      background: playing ? '#555' : '#0a84ff',
-      border: 'none',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: 20,
-      color: '#fff',
-      boxShadow: playing ? '0 2px 8px rgba(0,0,0,0.2)' : '0 4px 16px rgba(10,132,255,0.45)',
-      transition: 'background 0.2s, box-shadow 0.2s'
-    }
-  }, playing ? '⏸' : '▶'), /*#__PURE__*/React.createElement("button", {
-    onClick: () => seekTo(100),
-    style: btnIconStyle
-  }, "\u23ED")), err && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 12,
+      marginTop: 14,
       fontSize: 11,
-      color: '#ff3b30',
+      color: '#ff6b5e',
       textAlign: 'center'
     }
-  }, err, " \u2014 check ", /*#__PURE__*/React.createElement("code", null, work.mediaLocation)));
+  }, err, " \u2014 check ", /*#__PURE__*/React.createElement("code", null, work.mediaLocation))));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -697,14 +719,16 @@ function AudioPlayer({
 // ═══════════════════════════════════════════════════════════════════════════
 
 function VideoPlayer({
-  work
+  work,
+  onMediaSize
 }) {
   const [err, setErr] = useState(null);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: '#000',
-      width: 620,
-      maxWidth: '90vw'
+      width: '100%',
+      minWidth: 420,
+      boxSizing: 'border-box'
     }
   }, /*#__PURE__*/React.createElement("video", {
     src: work.mediaLocation,
@@ -716,7 +740,8 @@ function VideoPlayer({
       maxHeight: '70vh',
       background: '#000'
     },
-    onError: () => setErr('Unable to load video file')
+    onError: () => setErr('Unable to load video file'),
+    onLoadedMetadata: e => onMediaSize?.(e.target.videoWidth, e.target.videoHeight)
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '14px 18px',
@@ -728,20 +753,23 @@ function VideoPlayer({
       fontSize: 15,
       fontWeight: 600
     }
-  }, work.name), work.sub && /*#__PURE__*/React.createElement("div", {
+  }, work.name), work.sub && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.sub,
     style: {
       fontSize: 12,
       color: '#aaa',
       marginTop: 2
     }
-  }, work.sub), work.credits && /*#__PURE__*/React.createElement("div", {
+  }), work.credits && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.credits,
     style: {
       fontSize: 11.5,
       color: '#888',
       marginTop: 5,
       lineHeight: 1.5
     }
-  }, work.credits), work.notes && /*#__PURE__*/React.createElement("div", {
+  }), work.notes && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.notes,
     style: {
       fontSize: 11,
       color: '#777',
@@ -749,7 +777,7 @@ function VideoPlayer({
       marginTop: 5,
       lineHeight: 1.5
     }
-  }, work.notes), err && /*#__PURE__*/React.createElement("div", {
+  }), err && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: '#ff6b5e',
@@ -763,14 +791,17 @@ function VideoPlayer({
 // ═══════════════════════════════════════════════════════════════════════════
 
 function ImageViewer({
-  work
+  work,
+  onMediaSize
 }) {
   const [err, setErr] = useState(false);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: '#1a1a1a',
-      maxWidth: '90vw',
+      width: '100%',
+      minWidth: 400,
       maxHeight: '85vh',
+      boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column'
     }
@@ -780,7 +811,6 @@ function ImageViewer({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 400,
       minHeight: 260,
       maxHeight: '70vh',
       overflow: 'hidden'
@@ -800,6 +830,7 @@ function ImageViewer({
     src: work.mediaLocation,
     alt: work.name,
     onError: () => setErr(true),
+    onLoad: e => onMediaSize?.(e.target.naturalWidth, e.target.naturalHeight),
     style: {
       maxWidth: '100%',
       maxHeight: '70vh',
@@ -818,20 +849,23 @@ function ImageViewer({
       fontSize: 15,
       fontWeight: 600
     }
-  }, work.name), work.sub && /*#__PURE__*/React.createElement("div", {
+  }, work.name), work.sub && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.sub,
     style: {
       fontSize: 12,
       color: '#aaa',
       marginTop: 2
     }
-  }, work.sub), work.credits && /*#__PURE__*/React.createElement("div", {
+  }), work.credits && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.credits,
     style: {
       fontSize: 11.5,
       color: '#888',
       marginTop: 5,
       lineHeight: 1.5
     }
-  }, work.credits), work.notes && /*#__PURE__*/React.createElement("div", {
+  }), work.notes && /*#__PURE__*/React.createElement(HtmlText, {
+    html: work.notes,
     style: {
       fontSize: 11,
       color: '#777',
@@ -839,7 +873,7 @@ function ImageViewer({
       marginTop: 5,
       lineHeight: 1.5
     }
-  }, work.notes)));
+  })));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -876,8 +910,9 @@ function TextViewer({
   }, [work.mediaLocation]);
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 580,
-      maxWidth: '90vw',
+      width: '100%',
+      minWidth: 420,
+      boxSizing: 'border-box',
       background: '#fafafa'
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -919,8 +954,9 @@ function PdfViewer({
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 780,
-      maxWidth: '95vw',
+      width: '100%',
+      minWidth: 480,
+      boxSizing: 'border-box',
       background: '#fafafa',
       display: 'flex',
       flexDirection: 'column'
@@ -956,13 +992,16 @@ function PdfViewer({
 // ═══════════════════════════════════════════════════════════════════════════
 
 function MediaViewer({
-  work
+  work,
+  onMediaSize
 }) {
   if (!work.mediaLocation) {
     return /*#__PURE__*/React.createElement("div", {
       style: {
         padding: 30,
-        width: 360,
+        width: '100%',
+        minWidth: 360,
+        boxSizing: 'border-box',
         background: '#fafafa'
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -971,13 +1010,14 @@ function MediaViewer({
         fontWeight: 600,
         marginBottom: 6
       }
-    }, work.name), work.sub && /*#__PURE__*/React.createElement("div", {
+    }, work.name), work.sub && /*#__PURE__*/React.createElement(HtmlText, {
+      html: work.sub,
       style: {
         fontSize: 12,
         color: '#888',
         marginBottom: 14
       }
-    }, work.sub), /*#__PURE__*/React.createElement("div", {
+    }), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 12,
         color: '#ff9500',
@@ -997,11 +1037,13 @@ function MediaViewer({
       });
     case 'video':
       return /*#__PURE__*/React.createElement(VideoPlayer, {
-        work: work
+        work: work,
+        onMediaSize: onMediaSize
       });
     case 'image':
       return /*#__PURE__*/React.createElement(ImageViewer, {
-        work: work
+        work: work,
+        onMediaSize: onMediaSize
       });
     case 'pdf':
     case 'score':
@@ -1022,13 +1064,16 @@ function MediaViewer({
           work: {
             ...work,
             mediaType: guessed
-          }
+          },
+          onMediaSize: onMediaSize
         });
       }
       return /*#__PURE__*/React.createElement("div", {
         style: {
           padding: 30,
-          width: 360,
+          width: '100%',
+          minWidth: 360,
+          boxSizing: 'border-box',
           background: '#fafafa'
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -1054,7 +1099,9 @@ function AboutContent() {
   return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '24px 30px',
-      width: 580,
+      width: '100%',
+      minWidth: 480,
+      boxSizing: 'border-box',
       background: '#fafafa'
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -1185,7 +1232,9 @@ function ContactContent() {
   return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '28px 30px',
-      width: 390,
+      width: '100%',
+      minWidth: 340,
+      boxSizing: 'border-box',
       background: '#fafafa'
     }
   }, /*#__PURE__*/React.createElement("h3", {
@@ -1245,7 +1294,9 @@ function TeachingContent() {
   return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: '28px 30px',
-      width: 420,
+      width: '100%',
+      minWidth: 360,
+      boxSizing: 'border-box',
       background: '#fafafa'
     }
   }, /*#__PURE__*/React.createElement("h3", {
@@ -1357,7 +1408,9 @@ function ScoresContent({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 16,
-      width: 480,
+      width: '100%',
+      minWidth: 380,
+      boxSizing: 'border-box',
       background: '#f5f5f7'
     }
   }, /*#__PURE__*/React.createElement("p", {
@@ -1415,7 +1468,9 @@ function WorksContent({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 16,
-      width: 540,
+      width: '100%',
+      minWidth: 420,
+      boxSizing: 'border-box',
       background: '#f5f5f7',
       maxHeight: 440,
       overflowY: 'auto'
@@ -1478,6 +1533,8 @@ function AppWindow({
 }) {
   const drag = useRef(null);
   const [pos, setPos] = useState(win.pos);
+  // null = size to content; once the user resizes we store explicit {w,h}
+  const [size, setSize] = useState(win.size || null);
   const onTitleDown = e => {
     if (e.target.closest('[data-traffic]')) return;
     e.preventDefault();
@@ -1505,6 +1562,80 @@ function AppWindow({
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   };
+
+  // Once the media's natural size is known, size the window proportionally
+  // (small-to-medium) instead of leaving blank space or cropping content.
+  const autoSizedRef = useRef(false);
+  const handleMediaSize = (naturalW, naturalH) => {
+    if (autoSizedRef.current || !naturalW || !naturalH) return;
+    autoSizedRef.current = true;
+    const MAX_MEDIA_W = 640,
+      MAX_MEDIA_H = 420;
+    const MIN_MEDIA_W = 360,
+      MIN_MEDIA_H = 220;
+    const aspect = naturalW / naturalH;
+    let mediaW, mediaH;
+    if (aspect >= 1) {
+      mediaW = Math.min(naturalW, MAX_MEDIA_W);
+      mediaH = mediaW / aspect;
+    } else {
+      mediaH = Math.min(naturalH, MAX_MEDIA_H);
+      mediaW = mediaH * aspect;
+    }
+    if (mediaW < MIN_MEDIA_W) {
+      mediaW = MIN_MEDIA_W;
+      mediaH = mediaW / aspect;
+    }
+    if (mediaH < MIN_MEDIA_H) {
+      mediaH = MIN_MEDIA_H;
+      mediaW = mediaH * aspect;
+    }
+    const isImage = win.work?.mediaType === 'image';
+    const PAD = isImage ? 36 : 0;
+    const TITLEBAR_H = 38;
+    const CAPTION_H = isImage ? 80 : 90;
+    const w = Math.max(mediaW + PAD, 420);
+    const h = mediaH + PAD + CAPTION_H + TITLEBAR_H;
+    const prevW = size?.w || w,
+      prevH = size?.h || h;
+    setPos(p => ({
+      x: p.x - (w - prevW) / 2,
+      y: p.y - (h - prevH) / 2
+    }));
+    setSize({
+      w,
+      h
+    });
+  };
+  const MIN_W = 280,
+    MIN_H = 160;
+  const onResizeDown = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    onFocus(win.id);
+    autoSizedRef.current = true;
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    const start = {
+      mx0: e.clientX,
+      my0: e.clientY,
+      w0: rect.width,
+      h0: rect.height
+    };
+    document.body.classList.add('dragging');
+    const onMove = ev => {
+      setSize({
+        w: Math.max(MIN_W, start.w0 + ev.clientX - start.mx0),
+        h: Math.max(MIN_H, start.h0 + ev.clientY - start.my0)
+      });
+    };
+    const onUp = () => {
+      document.body.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
   const title = win.type === 'player' ? win.work?.name || '' : win.type === 'about' ? 'About Gabriel Kyne' : win.type === 'contact' ? 'Contact' : win.type === 'teaching' ? 'Teaching' : win.type === 'works' ? 'All Works' : win.type === 'scores' ? 'Music for Instruments' : '';
   return /*#__PURE__*/React.createElement("div", {
     className: "window-enter",
@@ -1516,7 +1647,11 @@ function AppWindow({
       borderRadius: 13,
       overflow: 'hidden',
       boxShadow: '0 22px 70px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(0,0,0,0.12)',
-      minWidth: 280
+      minWidth: 280,
+      display: 'flex',
+      flexDirection: 'column',
+      width: size ? size.w : undefined,
+      height: size ? size.h : undefined
     },
     onMouseDown: () => onFocus(win.id)
   }, /*#__PURE__*/React.createElement("div", {
@@ -1565,13 +1700,33 @@ function AppWindow({
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap'
     }
-  }, title)), win.type === 'player' && /*#__PURE__*/React.createElement(MediaViewer, {
-    work: win.work
+  }, title)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minHeight: 0,
+      overflow: 'auto',
+      position: 'relative',
+      background: win.type === 'player' && (win.work.mediaType === 'video' || win.work.mediaType === 'image') ? '#000' : '#fafafa'
+    }
+  }, win.type === 'player' && /*#__PURE__*/React.createElement(MediaViewer, {
+    work: win.work,
+    onMediaSize: handleMediaSize
   }), win.type === 'about' && /*#__PURE__*/React.createElement(AboutContent, null), win.type === 'contact' && /*#__PURE__*/React.createElement(ContactContent, null), win.type === 'teaching' && /*#__PURE__*/React.createElement(TeachingContent, null), win.type === 'works' && /*#__PURE__*/React.createElement(WorksContent, {
     works: works,
     onOpenWork: onOpenWork
   }), win.type === 'scores' && /*#__PURE__*/React.createElement(ScoresContent, {
     works: works
+  })), /*#__PURE__*/React.createElement("div", {
+    onMouseDown: onResizeDown,
+    style: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      width: 18,
+      height: 18,
+      cursor: 'nwse-resize',
+      zIndex: 5
+    }
   }));
 }
 
@@ -2113,6 +2268,23 @@ function App() {
   }, []);
   const openWindow = useCallback((type, work = null) => {
     const id = type === 'player' ? `player-${work.id || work.name}` : type;
+
+    // Video/image players default to a smaller fixed size and open centered
+    // (their content is otherwise huge at intrinsic size and lands off-center).
+    let size = null;
+    if (type === 'player' && (work?.mediaType === 'video' || work?.mediaType === 'image')) {
+      size = {
+        w: 560,
+        h: 460
+      };
+    }
+    const pos = size ? {
+      x: (window.innerWidth - size.w) / 2 + (Math.random() - 0.5) * 80,
+      y: (window.innerHeight - size.h) / 2 + (Math.random() - 0.5) * 60
+    } : {
+      x: window.innerWidth * 0.22 + Math.random() * window.innerWidth * 0.3,
+      y: window.innerHeight * 0.08 + Math.random() * window.innerHeight * 0.18
+    };
     setWindows(prev => {
       const exists = prev.find(w => w.id === id);
       if (exists) return prev.map(w => w.id === id ? {
@@ -2124,10 +2296,8 @@ function App() {
         type,
         work,
         zIndex: nextZ(),
-        pos: {
-          x: window.innerWidth * 0.22 + Math.random() * window.innerWidth * 0.3,
-          y: window.innerHeight * 0.08 + Math.random() * window.innerHeight * 0.18
-        }
+        pos,
+        size
       }];
     });
   }, []);
