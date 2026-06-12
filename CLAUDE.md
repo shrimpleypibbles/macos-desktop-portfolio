@@ -5,12 +5,16 @@
 Never edit files in `~/Downloads/` or any `.claude/worktrees/` path.
 
 ## What this is
-Single-file React portfolio styled as a macOS desktop. No build step — React + Babel loaded via CDN.
-- **Main file**: `index.html` (~1400 lines, all components inline)
+React portfolio styled as a macOS desktop. React loaded via CDN (no bundler), components precompiled with Babel.
+- **Source**: `app.jsx` (all components; gitignored) → compiled to `app.js` (deployed)
+- **Build step** (required after every `app.jsx` edit): `npx babel app.jsx --presets @babel/preset-react -o app.js`
+- **Shell**: `index.html` (small — meta tags, base CSS, React CDN scripts, loads `app.js`)
 - **Works data**: `data/works.csv` — columns: `number, name, year, instrumentation, media-type, media-location, thumbnail-location`
 - **Media**: hosted on Cloudflare R2, public base URL `https://pub-715e1f7bc3864cb8b05d16f94698b504.r2.dev`
+  - ⚠️ `~/Documents/gabrielkyne.com/assets/` auto-syncs to R2 within minutes — treat it as production
 - **Deploy**: GitHub → Cloudflare Pages (auto-deploy on push to `main`)
 - **GitHub repo**: `https://github.com/shrimpleypibbles/macos-desktop-portfolio`
+- **Backups**: pre-optimization media originals in `~/Documents/gabrielkyne.com/originals-backup/` (not synced)
 
 ## Sync commands
 ```bash

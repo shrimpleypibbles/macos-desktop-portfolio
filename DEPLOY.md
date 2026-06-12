@@ -1,5 +1,7 @@
 # Deployment Guide — From Your Laptop to the Internet
 
+> **✅ Status: this setup is COMPLETE.** The site is live at gabrielkyne.com (GitHub `shrimpleypibbles/macos-desktop-portfolio` → Cloudflare Pages, media on R2). Parts 1–4 and 6 are kept as reference only. The project lives at `~/Documents/gabrielkyne.com/macos-desktop-portfolio` — **not** in `~/Downloads` (that copy is an outdated duplicate). For day-to-day updates, jump to **Part 5**.
+
 **Goal:** put your portfolio online, for free, at a real URL (like `gabrielkyne.com` or `gabriel-kyne.pages.dev`), so that anyone in the world can visit it.
 
 **Audience:** you've never used git before. We'll go slow.
@@ -90,12 +92,12 @@ If you *don't* want to use `gh`, the alternative is SSH keys. Ask me later if yo
 
 ## Part 2 — Put Your Project on GitHub
 
-Your project at `~/Documents/macos-desktop-portfolio` is **already a git repository** (good — someone already ran `git init` at some point). You just need to connect it to a GitHub repo.
+Your project at `~/Documents/gabrielkyne.com/macos-desktop-portfolio` is **already a git repository** (good — someone already ran `git init` at some point). You just need to connect it to a GitHub repo.
 
 ### 2.1 Check the current state
 
 ```bash
-cd ~/Documents/macos-desktop-portfolio
+cd ~/Documents/gabrielkyne.com/macos-desktop-portfolio
 git status
 ```
 
@@ -212,7 +214,7 @@ Want `www.gabrielkyne.com` too? Repeat 4.3 with `www.gabrielkyne.com`.
 This is what you'll do every time you add a new work, update the CSV, or change anything:
 
 ```bash
-cd ~/Documents/macos-desktop-portfolio
+cd ~/Documents/gabrielkyne.com/macos-desktop-portfolio
 
 # ... edit your files (works.csv, add media to assets/, etc.) ...
 
@@ -274,7 +276,7 @@ GitHub deprecated password auth for git. Either:
 
 ### "fatal: not a git repository"
 
-You're in the wrong folder. Run `cd ~/Documents/macos-desktop-portfolio` first.
+You're in the wrong folder. Run `cd ~/Documents/gabrielkyne.com/macos-desktop-portfolio` first.
 
 ### Cloudflare build fails
 

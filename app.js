@@ -315,6 +315,8 @@ function Thumbnail({
   }, hasImage ? /*#__PURE__*/React.createElement("img", {
     src: work.thumbnail,
     alt: work.name,
+    loading: "lazy",
+    decoding: "async",
     onError: () => setImgError(true),
     style: {
       width: '100%',
@@ -1120,7 +1122,10 @@ function AboutContent() {
       flexShrink: 0,
       objectFit: 'cover'
     },
-    alt: "Gabriel Kyne"
+    alt: "Gabriel Kyne",
+    onError: e => {
+      e.target.style.display = 'none';
+    }
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     style: {
       fontSize: 22,
@@ -1903,7 +1908,7 @@ function DockIconContent({
   size
 }) {
   const [imgError, setImgError] = useState(false);
-  const imgPath = `https://pub-715e1f7bc3864cb8b05d16f94698b504.r2.dev/assets/dock/${id}.png`;
+  const imgPath = `https://pub-715e1f7bc3864cb8b05d16f94698b504.r2.dev/assets/dock/${id}.webp`;
   const bg = DockBackgrounds[id] || 'linear-gradient(145deg,#333,#555)';
   const fallback = DockIconFallback[id];
   if (!imgError) {
@@ -2342,7 +2347,7 @@ function App() {
       height: '100vh',
       overflow: 'hidden',
       position: 'relative',
-      backgroundImage: `url(https://pub-715e1f7bc3864cb8b05d16f94698b504.r2.dev/assets/images/wallpaper.jpg)`,
+      backgroundImage: `url(https://pub-715e1f7bc3864cb8b05d16f94698b504.r2.dev/assets/images/wallpaper.webp)`,
       backgroundSize: 'cover',
       backgroundPosition: 'center'
     },

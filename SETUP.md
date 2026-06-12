@@ -2,7 +2,7 @@
 
 ## Overview
 
-Your portfolio reads all works from a CSV file (`data/works.csv`) that you maintain in a Google Sheet. The actual media files (audio, video, images, PDFs, text) live under `assets/`.
+Your portfolio reads all works from a CSV file (`data/works.csv`) that you maintain in a Google Sheet. The actual media files (audio, video, images, PDFs, text) live in `~/Documents/gabrielkyne.com/assets/`, which auto-syncs to Cloudflare R2 — the CSV points at the public R2 URLs.
 
 ```
 ┌─────────────────┐   Export    ┌──────────────────┐   Fetched by
@@ -23,7 +23,7 @@ Your portfolio reads all works from a CSV file (`data/works.csv`) that you maint
 | number | name | year | description | credits | notes | media-type | media-location | thumbnail-location |
 |---|---|---|---|---|---|---|---|---|
 
-See **`GOOGLE_SHEETS_TEMPLATE.md`** for a fuller breakdown. Short version:
+Short version:
 
 - **number / name** — required.
 - **year / description / credits / notes** — optional metadata. `year` + `description` become the subtitle under the icon; `credits` and `notes` are shown in the player.
@@ -69,23 +69,23 @@ If `media-type` is missing, the site guesses from the file extension. Unknown ty
 
 Every time you want to change what's on the desktop:
 
-1. **Upload any new media files:**
+1. **Drop any new media files into `~/Documents/gabrielkyne.com/assets/`** (they auto-sync to R2 within minutes):
    - Audio → `assets/audio/`
    - Video → `assets/video/`
    - Images → `assets/images/`
    - Text → `assets/text/`
-   - PDFs/scores → `assets/text/` (convention) or anywhere you like
-   - Thumbnails → `assets/thumbnails/`
+   - PDFs/scores → `assets/scores/`
+   - Thumbnails → `assets/thumbnails/` (320px WebP keeps the site fast: `magick thumb.png -resize 320x320 -quality 82 thumb.webp`)
 2. **Edit the Google Sheet** — add/edit/delete rows.
 3. **Export** — File → Download → Comma-separated values (.csv).
 4. **Drop in the CSV:**
    ```bash
-   cp ~/Downloads/your-sheet.csv ~/Documents/macos-desktop-portfolio/data/works.csv
+   cp ~/Downloads/your-sheet.csv ~/Documents/gabrielkyne.com/macos-desktop-portfolio/data/works.csv
    ```
 5. **Commit & push** (if using git):
    ```bash
-   cd ~/Documents/macos-desktop-portfolio
-   git add data/works.csv assets/
+   cd ~/Documents/gabrielkyne.com/macos-desktop-portfolio
+   git add data/works.csv
    git commit -m "Update works"
    git push
    ```
@@ -104,7 +104,7 @@ Every time you want to change what's on the desktop:
 
 ## The Dock (Configuring Items)
 
-The dock is driven by the `DOCK_ITEMS` array near the top of `index.html`. Each entry has an `id`, a `label` (shown as tooltip on hover), and an `action`. Example:
+The dock is driven by the `DOCK_ITEMS` array near the top of `app.jsx` (rebuild `app.js` with Babel after editing — see `CLAUDE.md`). Each entry has an `id`, a `label` (shown as tooltip on hover), and an `action`. Example:
 
 ```js
 const DOCK_ITEMS = [
@@ -132,11 +132,10 @@ The dock shows tooltips on hover and no zoom (you asked). A separator appears be
 
 By default, dock items show a built-in white SVG glyph (Finder, Works, About, Contact, Teaching have hand-drawn fallbacks). To replace one:
 
-1. Drop a PNG into `assets/dock/` named after the `id`: `finder.png`, `works.png`, `cv.png`, etc.
-2. Recommended size: **128×128px or larger**, square.
-3. Refresh.
+1. Drop a WebP into `assets/dock/` named after the `id`: `finder.webp`, `works.webp`, `cv.webp`, etc. (~160×160px, square). From a PNG: `magick icon.png -resize 160x160 -quality 85 finder.webp`
+2. The assets folder auto-syncs to R2; refresh after a minute.
 
-If a PNG is missing, the SVG fallback is used — so you can replace them one at a time.
+If the image is missing, the SVG fallback is used — so you can replace them one at a time.
 
 > **About .icns files:** macOS uses `.icns` but browsers don't. Convert each icon to PNG first: open the `.icns` in Preview → File → Export → format: PNG → 256×256. Or use `iconutil` / `sips` on the command line. Then drop the PNG into `assets/dock/`.
 
@@ -146,7 +145,7 @@ If a PNG is missing, the SVG fallback is used — so you can replace them one at
 
 The top bar mimics macOS: Apple logo + "Gabriel Kyne  Film Composer" + File/Edit/View/Window/Help on the left; volume icon, battery (charging), date + 24h time on the right.
 
-To change the bold + light titles, edit these constants at the top of `index.html`:
+To change the bold + light titles, edit these constants at the top of `app.jsx` (then rebuild `app.js`):
 
 ```js
 const APP_TITLE_BOLD  = 'Gabriel Kyne';
@@ -163,13 +162,13 @@ A static server is required (the site uses `fetch()` for the CSV, which browsers
 
 **Option 1 — Python:**
 ```bash
-cd ~/Documents/macos-desktop-portfolio
+cd ~/Documents/gabrielkyne.com/macos-desktop-portfolio
 python3 -m http.server 8000
 ```
 
 **Option 2 — Node:**
 ```bash
-cd ~/Documents/macos-desktop-portfolio
+cd ~/Documents/gabrielkyne.com/macos-desktop-portfolio
 npx serve .
 ```
 
@@ -207,15 +206,11 @@ localStorage.removeItem('gk-icon-positions'); location.reload();
 
 | Path | Purpose |
 |---|---|
-| `index.html` | The site itself |
+| `index.html` | HTML shell (meta tags, CSS, loads React + `app.js`) |
+| `app.jsx` | Component source (gitignored — compile to `app.js`, see `CLAUDE.md`) |
+| `app.js` | Compiled site code (what actually deploys) |
 | `data/works.csv` | Your works database (exported from Google Sheets) |
-| `assets/dock/` | Custom dock icon PNGs (optional — falls back to SVG) |
-| `assets/thumbnails/` | Desktop icon images |
-| `assets/audio/` | Audio files |
-| `assets/video/` | Video files |
-| `assets/images/` | Image files |
-| `assets/text/` | Text files + PDFs |
-| `uploads/` | Wallpaper image |
-| `project/` | Original design prototype files (not used by the live site) |
-| `GOOGLE_SHEETS_TEMPLATE.md` | Sheet schema + example rows |
-| `TECHNICAL_NOTES.md` | Deeper implementation notes |
+| `../assets/` | Media files — lives at `~/Documents/gabrielkyne.com/assets/`, auto-syncs to Cloudflare R2 |
+| `../assets/dock/` | Custom dock icon WebPs (optional — falls back to SVG) |
+| `../assets/thumbnails/` | Desktop icon images (320px WebP) |
+| `../assets/audio/`, `video/`, `images/`, `text/`, `scores/` | The media itself |
